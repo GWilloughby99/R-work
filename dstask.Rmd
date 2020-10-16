@@ -4,7 +4,7 @@ author: "George WIlloughby"
 date: "16/10/2020"
 output: html_document
 ---
-# Importing the Cheshire outcomes data
+# Importing the Cheshire outcomes data from August 2020
 
 ```{r}
 cheshire08 <- read.csv("2020-08-cheshire-outcomes.csv")
