@@ -1,0 +1,58 @@
+---
+title: "over60s"
+author: "George WIlloughby"
+date: "24/11/2020"
+output: html_document
+---
+
+# Activate packages
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dplyr)
+```
+# Import data
+
+```{r}
+over60spositive <- read.csv("Over60spositive.csv", stringsAsFactors = FALSE)
+```
+
+# Renaming columns
+
+```{r}
+colnames(over60spositive) <- c("Date", "Local.Authority", "Region", "Age.Group", "Positive.Tests")
+
+colnames(over60spositive)
+
+head(over60spositive)
+```
+
+#Convert character to number
+
+```{r}
+over60spositive$Positive.Tests <- as.numeric(over60spositive$Positive.Tests)
+```
+
+
+#Creating a sum column for all ages over 60
+
+```{r}
+library(dplyr)
+  over60spositive %>%
+  group_by(Local.Authority) %>%
+  summarise(sum.positive.over60 = sum(Positive.Tests))
+```
+
+
+
+
+
+
+
+
+
+
+
+
