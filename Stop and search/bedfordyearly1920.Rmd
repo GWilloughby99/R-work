@@ -1,0 +1,121 @@
+---
+title: "bedfordyearly1920"
+author: "George WIlloughby"
+date: "14/12/2020"
+output: html_document
+---
+
+# Import data
+
+```{r}
+bedfordyearly1920 <- read.csv("bedfordshireyearly.csv", stringsAsFactors = FALSE)
+
+bedfordyearly1920
+```
+
+```{r}
+library(dplyr)
+
+bedfordyearly1920 <- bedfordyearly1920 %>%
+  select(Type, Date, Age.range, Self.defined.ethnicity, Outcome)
+
+bedfordyearly1920
+```
+
+```{r}
+colnames(bedfordyearly1920) <- c("Type", "Date", "Age_range", "Ethnicity", "Outcome")
+
+bedfordyearly1920
+```
+
+```{r}
+library(tidyr)
+
+date <- tidyr :: separate(bedfordyearly1920, 2, c("Date"), sep = "T")
+
+bedfordyearly1920 <- date
+
+bedfordyearly1920
+```
+
+
+```{r}
+bedfordyearly1920[bedfordyearly1920==""] <- NA
+
+bedfordyearlyclean <- bedfordyearly1920 %>%
+  drop_na(Age_range, Ethnicity)
+
+bedfordyearlyclean %>%
+  count(Ethnicity, Age_range, sort = TRUE)
+```
+# Total stop and search
+
+```{r}
+bedfordyearlyclean = filter(bedfordyearlyclean, Type != "Type")
+
+table(bedfordyearlyclean$Type)
+```
+
+```{r}
+bedfordyearlyclean %>%
+  count(Type)
+
+totalbedstopped <- 818 + 2761
+```
+
+```{r}
+library(jsonlite)
+library(httr)
+```
+
+
+```{r}
+bedfordyearlyclean$Asian <- grepl("Asian/Asian British", bedfordyearlyclean$Ethnicity)
+#Subset
+bedfordyearlyclean <- subset(bedfordyearlyclean, bedfordyearlyclean$Asian == TRUE)
+
+table(bedfordyearlyclean$Ethnicity)
+```
+
+
+```{r}
+library(dplyr)
+
+bedfordyearlyclean %>%
+  count(Age_range, sort  = TRUE)
+```
+# Calculations
+
+```{r}
+totalasianstoppedbed <- 372 + 144 + 111 + 64 + 1 #692
+
+bedfordyearlyclean %>%
+  count(Age_range, sort = TRUE)
+
+peopledaged1024stopped <- 111 + 372 #483
+```
+
+# Percentage of Asian stopped and searched aged 10-24 
+
+*Date from October 2019 to October 2020*
+
+```{r}
+peopledaged1024stopped / totalasianstoppedbed * 100
+```
+
+# Proportion of Asians as total
+
+```{r}
+totalasianstoppedbed / totalbedstopped * 100
+```
+
+
+
+
+
+
+
+
+
+
+
