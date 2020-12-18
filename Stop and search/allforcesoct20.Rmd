@@ -1,0 +1,174 @@
+---
+title: "firsthalfforces"
+author: "George WIlloughby"
+date: "13/12/2020"
+output: html_document
+---
+
+# Importing the data
+
+```{r}
+first21forces <- read.csv("firsthalfofforces.csv", header=T, stringsAsFactors = FALSE)
+second21forces <- read.csv("secondhalfofforces.csv", header=T, stringsAsFactors = FALSE)
+```
+
+# Joining the data together
+
+```{r}
+allforcesoctober20 <- rbind(first21forces, second21forces)
+
+head(allforcesoctober20)
+```
+
+```{r}
+colnames(allforcesoctober20)
+```
+
+
+# Remove columns
+
+```{r}
+library(dplyr)
+
+allforcesoctober20 <- allforcesoctober20 %>%
+  select(Type, Date, Age.range, Self.defined.ethnicity, Outcome)
+
+allforcesoctober20
+```
+
+```{r}
+colnames(allforcesoctober20)
+```
+
+# Renaming columns
+
+```{r}
+library(dplyr)
+
+colnames(allforcesoctober20) <- c("Type", "Date", "Age_range", "Ethnicity", "Outcome")
+
+colnames(allforcesoctober20)
+```
+
+```{r}
+library(tidyr)
+```
+
+```{r}
+cleandate <- tidyr:: separate(allforcesoctober20, 2, c("Date"), sep= "T")
+
+allforcesoctober20 <- cleandate
+
+allforcesoctober20
+```
+
+# Counting and removing NAs
+
+```{r}
+library(tidyr)
+
+allforcesoctober20[allforcesoctober20==""] <- NA
+
+allforcesethnicity <- allforcesoctober20 %>%
+  drop_na(Ethnicity, Age_range)
+
+allforcesethnicity %>%
+  count(Ethnicity, sort = TRUE)
+```
+
+```{r}
+table(allforcesoctober20$Ethnicity)
+```
+
+# Counting age groups
+
+```{r}
+agerangesallforces <- allforcesethnicity %>%
+  count(Age_range, sort = TRUE)
+
+write.csv(x=agerangesallforces, file="agrenageallforces.csv")
+```
+
+
+
+
+
+# Removing ethnicities
+
+```{r}
+install.packages("jsonlite")
+install.packages("httr")
+```
+
+```{r}
+library(jsonlite)
+library(httr)
+```
+
+
+```{r}
+table(allforcesethnicity$Ethnicity)
+```
+
+```{r}
+asianethnicity <- grepl("Asian/Asian British", allforcesethnicity$Ethnicity)
+
+allforcesethnicity$Asian <- asianethnicity
+
+asianethnicity <- grepl("Asian/Asian [A-s]", allforcesethnicity$Ethnicity)
+
+asianethnicity <- subset(allforcesethnicity, allforcesethnicity$Asian == TRUE)
+
+table(asianethnicity$Ethnicity)
+```
+
+# Counting stop and searches
+
+```{r}
+table(asianethnicity$Ethnicity)
+```
+
+```{r}
+totalstopped <- 2271 + 40 + 1492 + 992 + 603
+
+totalstopped
+```
+
+
+```{r}
+table(asianethnicity$Age_range)
+```
+
+
+```{r}
+asians1024 <- 678 + 2513
+
+asians1024
+```
+
+
+# Percentage of Asians aged 10-24 stopped and searched
+
+```{r}
+percentage1024 <- asians1024 / totalstopped * 100
+
+percentage1024
+```
+
+
+
+
+library(dplyr)
+
+df %>%
+mutate(month = format(date, "%m"), year = format(date, "%Y")) %>%
+group_by(month, year) %>%
+summarise(total = sum(value))
+
+
+
+
+
+
+
+
