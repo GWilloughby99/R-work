@@ -1,0 +1,140 @@
+---
+title: "westyorkyearly1920"
+author: "George WIlloughby"
+date: "14/12/2020"
+output: html_document
+---
+
+# Import data
+
+```{r}
+westyorkshireyearly1920 <- read.csv("westyorkshireyearly.csv", stringsAsFactors = FALSE)
+
+westyorkshireyearly1920
+```
+
+# Dropping columns
+
+```{r}
+library(dplyr)
+
+westyorkshireyearly1920 <- westyorkshireyearly1920 %>%
+  select(Type, Date, Age.range, Self.defined.ethnicity, Outcome)
+
+westyorkshireyearly1920
+```
+
+# Renaming columns
+
+```{r}
+colnames(westyorkshireyearly1920) <- c("Type", "Date", "Age_range", "Ethnicity", "Outcome")
+
+colnames(westyorkshireyearly1920)
+```
+
+# Cleaning the date
+
+```{r}
+library(tidyr)
+
+cleanerdate <- tidyr :: separate(westyorkshireyearly1920, 2, c("Date"), sep = "T")
+
+westyorkshireyearly1920 <- cleanerdate
+
+westyorkshireyearly1920
+```
+
+
+# Counting and removing NAs
+
+```{r}
+westyorkshireyearly1920[westyorkshireyearly1920==""] <- NA
+
+westyorkshireyearlyclean <- westyorkshireyearly1920 %>%
+  drop_na(Age_range, Ethnicity)
+
+westyorkshireyearlyclean %>%
+  count(Ethnicity, Age_range, sort = TRUE)
+```
+
+# Total stop and searches where Ethnicity and age group could be identified
+
+
+```{r}
+table(westyorkshireyearlyclean$Type)
+```
+
+*There seems to be 12 additional values in the 'type' column'.*
+
+```{r}
+westyorkshireyearlyclean = filter(westyorkshireyearlyclean, Type != "Type")
+
+table(westyorkshireyearlyclean$Type)
+```
+
+Now we can add together the search types to figure out the total of all ethnicities
+
+```{r}
+westyorkshireyearlyclean %>%
+  count(Type)
+
+totalwestyorkshire <- 6420 + 12869
+```
+# Removing ethncities
+
+```{r}
+install.packages("jsonlite")
+install.packages("httr")
+
+library(jsonlite)
+library(httr)
+```
+
+
+```{r}
+westyorkshireyearlyclean$Asian <- grepl("Asian/Asian British", westyorkshireyearlyclean$Ethnicity)
+#Subset
+westyorkshireyearlyclean <- subset(westyorkshireyearlyclean, westyorkshireyearlyclean$Asian == TRUE)
+
+table(westyorkshireyearlyclean$Ethnicity)
+```
+
+
+```{r}
+westyorkshireyearlyclean %>%
+  count(Age_range, sort = TRUE)
+
+# Proportion of total stop and searches
+
+westyorktotalasian <- 2229 + 1408 + 530 + 488 + 1
+```
+
+## Asian proportion of total
+
+```{r}
+westyorktotalasian / totalwestyorkshire * 100
+```
+
+
+# Proportion of Asian stopped aged 10-24
+
+```{r}
+westyorkshireyearlyclean %>%
+  count(Age_range, sort = TRUE)
+
+westyorkasian1024 <- 530 + 2229
+```
+
+*10-24 proportion*
+
+```{r}
+westyorkasian1024 / westyorktotalasian * 100
+```
+
+
+
+
+
+
+
+
