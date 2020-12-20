@@ -1,0 +1,226 @@
+---
+title: "wmyearly1920"
+author: "George WIlloughby"
+date: "09/12/2020"
+output: html_document
+---
+
+# Importing the data
+
+```{r}
+wmstopandsearch10_19 <- read.csv("2019-10-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch11_19 <- read.csv("2019-11-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch12_19 <- read.csv("2019-12-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch01_20 <- read.csv("2020-01-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch02_20 <- read.csv("2020-02-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch03_20 <- read.csv("2020-03-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch04_20 <- read.csv("2020-04-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch05_20 <- read.csv("2020-05-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch06_20 <- read.csv("2020-06-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch07_20 <- read.csv("2020-07-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch08_20 <- read.csv("2020-08-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch09_20 <- read.csv("2020-09-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+wmstopandsearch10_20 <- read.csv("2020-10-west-midlands-stop-and-search.csv", stringsAsFactors = FALSE)
+```
+
+# Rbind ()
+
+We are going to join the stop and search figures together to make one data set
+
+```{r}
+wmyearlyoct19to20 <- rbind(wmstopandsearch10_19, wmstopandsearch11_19, wmstopandsearch12_19,wmstopandsearch01_20,wmstopandsearch02_20, wmstopandsearch03_20,wmstopandsearch04_20, wmstopandsearch05_20, wmstopandsearch06_20,wmstopandsearch07_20, wmstopandsearch08_20, wmstopandsearch09_20, wmstopandsearch10_20)
+```
+
+
+#Renaming columns
+
+```{r}
+#Rename columns
+colnames(wmyearlyoct19to20) <- c("Type", "Date", "Policing_operation_part", "Policing_operation", "Latitude", "Longitude", "Gender", "Age_range", "Ethnicity", "Officer_ethnicity", "Legislation", "Search_object", "Outcome", "Object_search_outcome", "Removal_of_clothing")
+```
+
+#Inspect the data
+
+```{r}
+head(wmyearlyoct19to20)
+```
+
+# Dropping unwanted columns
+
+```{r}
+#Activate packages
+library(dplyr)
+
+#Dropping columns
+wmyearlyoct19to20 <- wmyearlyoct19to20 %>%
+  select(Type, Date, Ethnicity, Age_range, Legislation, Search_object, Outcome, Removal_of_clothing)
+
+wmyearlyoct19to20
+```
+
+# Changing the date
+
+*The date we want is the YYYY/MM/DD*
+
+```{r}
+install.packages("tidyr")
+```
+
+```{r}
+library(tidyr)
+```
+
+**Changing the date**
+
+```{r}
+#New date
+newdate <- tidyr :: separate(wmyearlyoct19to20, 2, c("Date"), sep= "T")
+
+newdate
+```
+
+*Putting the new date into the yearly dataset*
+
+```{r}
+wmyearlyoct19to20 <- newdate
+
+wmyearlyoct19to20
+```
+
+# Analysis
+
+We want to see the monthly figures for the number of Asians stopped and searched in the West Midlands Police Force area.
+
+To do this, we will need to remove the other ethnicities.
+
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+#Inspecting ethnicities
+
+wmyearlyoct19to20 %>%
+  count(Ethnicity, sort = TRUE)
+
+```
+# Calculating the NAs and then excluding them from the dataset
+
+```{r}
+wmyearlyoct19to20[wmyearlyoct19to20==""] <- NA
+
+ethnicityyearly <- wmyearlyoct19to20 %>%
+  drop_na(Ethnicity, Age_range)
+
+ethnicityyearly %>%
+  count(Ethnicity, Age_range, sort = TRUE)
+```
+```{r}
+ethnicityyearly %>%
+  count(Type)
+
+totalstoppedwestmid <- 3545 + 16864
+
+totalstoppedwestmid
+```
+
+
+
+# Export data
+
+```{r}
+write.csv(x=ethnicityyearly, file="westmidlandsethnicity.csv")
+```
+
+# Removing the unwanted ethnicities
+
+```{r}
+install.packages("jsonlite")
+install.packages("httr")
+```
+
+```{r}
+#Activating packages
+library(jsonlite)
+library(httr)
+```
+
+
+```{r}
+ethnicityyearly$Asian <- grepl("[A]+", ethnicityyearly$Ethnicity)
+#Subset
+asian.ethnicity <- subset(ethnicityyearly, ethnicityyearly$Asian == TRUE)
+
+asian.ethnicity
+```
+
+```{r}
+asian_only <- grepl("Asian/Asian British", ethnicityyearly$Ethnicity)
+```
+
+```{r}
+ethnicityyearly$Asian <- asian_only
+```
+
+```{r}
+asian_only <- grepl("Asian/Asian British [A-s]", ethnicityyearly$Ethnicity)
+```
+
+```{r}
+asian_only <- subset(ethnicityyearly, ethnicityyearly$Asian == TRUE)
+
+table(asian_only$Ethnicity)
+```
+
+```{r}
+write.csv(x=asian_only, file="wmethnicityandagegroups.csv")
+```
+
+```{r}
+asian_only
+```
+
+```{r}
+asian_only %>%
+  count(Type)
+
+asianstoppedwestmid <- 1438 + 4437
+#1438 + 4437 = 5875
+
+asianstoppedwestmid / totalstoppedwestmid * 100
+```
+
+```{r}
+asian_only %>%
+  count(Ethnicity, Age_range, sort = TRUE)
+```
+
+```{r}
+asian_only %>%
+  group_by(Age_range) %>%
+  count(Age_range, sort = TRUE)
+```
+
+
+```{r}
+909 + 2798
+
+3707 / 5875 *100
+
+#63% of those stopped and searched by West Midlands Police Force were between 10-24
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
