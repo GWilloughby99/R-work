@@ -1,0 +1,104 @@
+---
+title: "dstask"
+author: "George WIlloughby"
+date: "16/10/2020"
+output: html_document
+---
+# Importing the Cheshire outcomes data
+
+```{r}
+cheshire08 <- read.csv("2020-08-cheshire-outcomes.csv")
+```
+
+# Creating a summary of the first dataset.
+
+```{r}
+summary(cheshire08$Outcome.type)
+```
+
+```{r}
+summary(cheshire08)
+```
+
+# Joining the July dataset
+
+*This can be done using the same way as before*
+
+```{r}
+cheshire07 <- read.csv("2020-07-cheshire-outcomes.csv")
+```
+
+# Using Rbind() to connect the datasets
+
+```{r}
+cheshire07to08 <- rbind(cheshire07, cheshire08)
+```
+
+# Exporting the data
+
+```{r}
+write.csv(cheshire07to08, "cheshirejulytoaug.csv")
+```
+
+# Creating a subset
+
+*I am going to filter the data to show the 'outcome type' as 'suspect charged'* 
+
+*Also, remember to double-check the spelling of the outcome types. R is case sensitive.*
+
+```{r}
+cheshirecharged <- subset(cheshire07to08, cheshire07to08$Outcome.type == "Suspect charged")
+```
+
+*The new dataset is in the environment*
+
+```{r}
+library(dplyr)
+```
+
+#Filtering to show the count for 'Suspect charged'
+
+```{r}
+cheshirecharged %>% 
+    filter(!is.na(Outcome.type)) %>% 
+    group_by(Outcome.type) %>% 
+    count()
+```
+
+# Show the count for each crime outcome
+
+```{r}
+cheshire07to08 %>% 
+    filter(!is.na(Outcome.type)) %>% 
+    group_by(Outcome.type) %>% 
+    count()
+```
+# Visualising the data
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+ggplot(cheshire08) +
+  geom_bar(aes(x=Outcome.type)) +
+  labs(title = "Outcome Types in CE") +
+  coord_flip() +
+  xlab("Crimes") + ylab("Number")
+```
+*If anyone could help me with adjusting the x and y axis to make it look cleaner, that would be great*
+
+*I looked online and saw the reorder() function but I couldn't quite work it out* 
+
+
+
+
+
+
+
+
+
+
+
+
+
