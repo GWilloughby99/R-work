@@ -1,0 +1,208 @@
+---
+title: "casesutla"
+author: "George WIlloughby"
+date: "05/01/2021"
+output: html_document
+---
+```{r}
+library(jsonlite)
+library(httr)
+library(dplyr)
+```
+
+
+
+
+# Using the government API to get case data
+
+```{r}
+#' Extracts paginated data by requesting all of the pages
+#' and combining the results.
+#'
+#' @param filters    API filters. See the API documentations for 
+#'                   additional information.
+#'                   
+#' @param structure  Structure parameter. See the API documentations 
+#'                   for additional information.
+#'                   
+#' @return list      Comprehensive list of dictionaries containing all 
+#'                   the data for the given ``filter`` and ``structure`.`
+get_paginated_data <- function (filters, structure) {
+  
+    endpoint     <- "https://api.coronavirus.data.gov.uk/v1/data"
+    results      <- list()
+    current_page <- 1
+    
+    repeat {
+
+        httr::GET(
+            url   = endpoint,
+            query = list(
+                filters   = paste(filters, collapse = ";"),
+                structure = jsonlite::toJSON(structure, auto_unbox = TRUE),
+                page      = current_page
+            ),
+            timeout(10)
+        ) -> response
+        
+        # Handle errors:
+        if ( response$status_code >= 400 ) {
+            err_msg = httr::http_status(response)
+            stop(err_msg)
+        } else if ( response$status_code == 204 ) {
+            break
+        }
+        
+        # Convert response from binary to JSON:
+        json_text <- content(response, "text")
+        dt        <- jsonlite::fromJSON(json_text)
+        results   <- rbind(results, dt$data)
+        
+        if ( is.null( dt$pagination$`next` ) ){
+            break
+        }
+        
+        current_page <- current_page + 1;
+
+    }
+    
+    return(results)
+    
+}
+
+
+# Create filters:
+query_filters <- c(
+    "areaType=utla"
+)
+
+# Create the structure as a list or a list of lists:
+query_structure <- list(
+    date       = "date", 
+    name       = "areaName", 
+    code       = "areaCode", 
+    daily      = "newCasesBySpecimenDate",
+    cumulative = "cumCasesBySpecimenDate"
+)
+
+cases_utla <- get_paginated_data(query_filters, query_structure)
+
+list(
+  "Shape"                = dim(cases_utla),
+  "Data (first 3 items)" = cases_utla[0:3, 0:-1]
+) -> report
+
+print(report)
+```
+
+```{r}
+#Change daily and cumulative to be more specific
+colnames(cases_utla) <- c("date", "name", "code", "daily_cases", "cumulative_cases")
+```
+
+# Using grepl to select only the cases in England
+
+```{r}
+cases_utla$England <- grepl("[E]+", cases_utla$code)
+
+#Create a subset
+cases_utla <- subset(cases_utla, cases_utla$England == TRUE)
+
+cases_utla
+```
+
+# Calculating the rate by importing the population figures
+
+```{r}
+# Importing the population figures
+populationestimates <- read.csv("updatedestimations.csv")
+
+populationestimates
+```
+# Renaming columns in the population dataset so they match with the local authority data frame
+
+```{r}
+colnames(populationestimates)
+
+populationestimates <- populationestimates %>%
+  rename(code = Code, name = Name)
+```
+
+
+# Merging the population estimates with the upper tier la regions
+
+```{r}
+# Merging the population figures by 'name'
+casesutlapopulation <- merge(cases_utla, populationestimates, by = "name")
+
+# Drop columns six and seven because they are duplicates
+casesutlapopulation <- casesutlapopulation [-c(6,7,10:100)]
+
+casesutlapopulation
+
+# Renaming these columns to make them cleaner
+casesutlapopulation <- casesutlapopulation %>%
+  rename(
+    population = All.ages,
+    code = code.x
+  )
+
+# View changes
+casesutlapopulation
+```
+
+# Calculate the case rate
+
+```{r}
+casesutlapopulation$case_rate <- (casesutlapopulation$daily_cases/casesutlapopulation$population) *100000
+
+casesutlapopulation
+```
+
+# Calculating the case rates in each upper tier local authority
+
+```{r}
+# Cases for last week
+casesupperlapreviousweek <- subset(casesutlapopulation, casesutlapopulation$date >= "2021-01-17" & casesutlapopulation$date <= "2021-01-24")
+
+casesupperlapreviousweek
+```
+
+
+```{r}
+# Summary of previous week
+library(dplyr)
+sumcasesupperlapreviousweek <- casesupperlapreviousweek %>%
+  group_by(name) %>%
+  summarise(sum = sum(case_rate))
+
+sumcasesupperlapreviousweek
+```
+
+# Exporting the data
+
+```{r}
+sumcasesupperlapreviousweek <- write.csv(sumcasesupperlapreviousweek, "upperlacasespreviousweek.csv")
+```
+
+# Summary of week before the latest
+
+```{r}
+# Summary of week before last
+
+casesupperla16to23jan <- subset(casesutlapopulation, casesutlapopulation$date >= "2021-01-16" & casesutlapopulation$date <= "2021-01-23")
+
+casesupperla16to23jan
+
+sumcasesupperla16to23jan <- casesupperla16to23jan %>%
+  group_by(name) %>%
+  summarise(sum = sum(case_rate))
+
+sumcasesupperla16to23jan
+```
+
+# Exporting the data
+
+```{r}
+sumcasesupperla21to27dec <- write.csv(sumcasesupperla21to27dec, "upperlacaserates21to27dec.csv")
+```

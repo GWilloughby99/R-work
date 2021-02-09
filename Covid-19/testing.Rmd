@@ -1,0 +1,289 @@
+---
+title: "testing"
+author: "George WIlloughby"
+date: "10/01/2021"
+output: html_document
+---
+```{r}
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(tidyr)
+```
+
+
+
+```{r}
+#' Extracts paginated data by requesting all of the pages
+#' and combining the results.
+#'
+#' @param filters    API filters. See the API documentations for 
+#'                   additional information.
+#'                   
+#' @param structure  Structure parameter. See the API documentations 
+#'                   for additional information.
+#'                   
+#' @return list      Comprehensive list of dictionaries containing all 
+#'                   the data for the given ``filter`` and ``structure`.`
+get_paginated_data <- function (filters, structure) {
+  
+    endpoint     <- "https://api.coronavirus.data.gov.uk/v1/data"
+    results      <- list()
+    current_page <- 1
+    
+    repeat {
+
+        httr::GET(
+            url   = endpoint,
+            query = list(
+                filters   = paste(filters, collapse = ";"),
+                structure = jsonlite::toJSON(structure, auto_unbox = TRUE),
+                page      = current_page
+            ),
+            timeout(10)
+        ) -> response
+        
+        # Handle errors:
+        if ( response$status_code >= 400 ) {
+            err_msg = httr::http_status(response)
+            stop(err_msg)
+        } else if ( response$status_code == 204 ) {
+            break
+        }
+        
+        # Convert response from binary to JSON:
+        json_text <- content(response, "text")
+        dt        <- jsonlite::fromJSON(json_text)
+        results   <- rbind(results, dt$data)
+        
+        if ( is.null( dt$pagination$`next` ) ){
+            break
+        }
+    
+        current_page <- current_page + 1;
+    }
+    
+    return(results)
+    
+}
+
+# Create filters:
+query_filters <- c(
+    "areaType=nation",
+    "areaName=England"
+)
+
+# Create the structure as a list or a list of lists:
+query_structure <- list(
+    date       = "date", 
+    name       = "areaName", 
+    pillaronetests     = "newPillarOneTestsByPublishDate",
+    pillartwotests  = "newPillarTwoTestsByPublishDate",
+    pillarthreetests = "newPillarThreeTestsByPublishDate",
+    pillarfourtests = "newPillarFourTestsByPublishDate",
+    newtests   = "newTestsByPublishDate"
+)
+
+testingpillarsengland <- get_paginated_data(query_filters, query_structure)
+
+list(
+  "Shape"                = dim(testingpillarsengland),
+  "Data (first 3 items)" = testingpillarsengland[0:3, 0:-1]
+) -> report
+
+print(report)
+
+```
+
+## What do the pillars mean?
+
+# Pillar 1: swab testing in Public Health England (PHE) labs and NHS hospitals for those with a clinical need, and health and care workers
+
+# Pillar 2: swab testing for the wider population, as set out in government guidance
+
+# Pillar 3: serology testing to show if people have antibodies from having had COVID-19
+
+# Pillar 4: blood and swab testing for national surveillance supported by PHE, the Office for National Statistics (ONS), and research, academic, and scientific partners to learn more about the prevalence and spread of the virus and for other testing research purposes, such as the accuracy and ease of use of home testing
+
+Source: GOV.UK(https://www.gov.uk/government/publications/coronavirus-covid-19-testing-data-methodology/covid-19-testing-data-methodology-note)
+
+
+```{r}
+testingpillarsengland
+```
+# Changing NA values to 0
+
+```{r}
+testingpillarsengland$pillartwotests <- testingpillarsengland$pillartwotests %>% tidyr::replace_na(0)
+
+testingpillarsengland$pillartwotests
+
+testingpillarsengland$pillarthreetests <- testingpillarsengland$pillarthreetests %>% tidyr::replace_na(0)
+testingpillarsengland$pillarfourtests <- testingpillarsengland$pillarfourtests %>% tidyr::replace_na(0)
+```
+
+# Calculating the total number of tests carried out each day in England
+
+```{r}
+testingpillarsengland$totaltests <-  testingpillarsengland$pillaronetests+testingpillarsengland$pillartwotests+testingpillarsengland$pillarthreetests+testingpillarsengland$pillarfourtests
+
+testingpillarsengland
+```
+
+# Importing the daily positive cases
+
+```{r}
+#' Extracts paginated data by requesting all of the pages
+#' and combining the results.
+#'
+#' @param filters    API filters. See the API documentations for 
+#'                   additional information.
+#'                   
+#' @param structure  Structure parameter. See the API documentations 
+#'                   for additional information.
+#'                   
+#' @return list      Comprehensive list of dictionaries containing all 
+#'                   the data for the given ``filter`` and ``structure`.`
+get_paginated_data <- function (filters, structure) {
+  
+    endpoint     <- "https://api.coronavirus.data.gov.uk/v1/data"
+    results      <- list()
+    current_page <- 1
+    
+    repeat {
+
+        httr::GET(
+            url   = endpoint,
+            query = list(
+                filters   = paste(filters, collapse = ";"),
+                structure = jsonlite::toJSON(structure, auto_unbox = TRUE),
+                page      = current_page
+            ),
+            timeout(10)
+        ) -> response
+        
+        # Handle errors:
+        if ( response$status_code >= 400 ) {
+            err_msg = httr::http_status(response)
+            stop(err_msg)
+        } else if ( response$status_code == 204 ) {
+            break
+        }
+        
+        # Convert response from binary to JSON:
+        json_text <- content(response, "text")
+        dt        <- jsonlite::fromJSON(json_text)
+        results   <- rbind(results, dt$data)
+        
+        if ( is.null( dt$pagination$`next` ) ){
+            break
+        }
+        
+        current_page <- current_page + 1;
+
+    }
+    
+    return(results)
+    
+}
+
+
+# Create filters:
+query_filters <- c(
+    "areaName=England"
+)
+
+# Create the structure as a list or a list of lists:
+query_structure <- list(
+    date       = "date", 
+    name       = "areaName",
+    code       = "areaCode",
+    daily      = "newCasesBySpecimenDate",
+    cumulative = "cumCasesBySpecimenDate"
+)
+
+dailycasesengland <- get_paginated_data(query_filters, query_structure)
+
+list(
+  "Shape"                = dim(dailycasesengland),
+  "Data (first 3 items)" = dailycasesengland[0:3, 0:-1]
+) -> report
+
+print(report)
+```
+
+# View the data
+
+```{r}
+dailycasesengland
+```
+
+# Rename columns to help clarity
+```{r}
+library(dplyr)
+
+dailycasesengland <- dailycasesengland %>%
+  rename(
+    daily_cases = "daily",
+    cumulative_cases = "cumulative"
+  )
+
+dailycasesengland
+```
+
+# Joining the data together
+
+```{r}
+test_cases <- left_join(testingpillarsengland, dailycasesengland, b=c("date"))
+
+test_cases
+
+test_cases <- test_cases[-c(2,9)]
+
+test_cases
+```
+
+# Percentage tests returining posiitve
+
+```{r}
+test_cases$percentagepositive <- (test_cases$daily_cases/test_cases$totaltests)*100
+
+test_cases
+```
+
+```{r}
+library(lubridate)
+
+weeklypositiverate <- test_cases %>%
+  group_by(week = isoweek(date)) %>%
+  mutate(positive_rate_average = mean(percentagepositive))
+
+weeklypositiverate
+```
+
+
+```{r}
+positive_rate_short <- weeklypositiverate %>%
+  filter(row_number() %% 7 == 1)
+
+positive_rate_short
+
+```
+
+# Export data
+
+```{r}
+positive_rate_short <- write.csv(positive_rate_short, "positive_weekly_test_rate.csv")
+test_cases <- write.csv(test_cases, "percentage_testing_positive.csv")
+```
+
+
+
+
+
+
+
+
+
+
+
