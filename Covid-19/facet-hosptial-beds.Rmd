@@ -1,0 +1,75 @@
+---
+title: "facet-hospital-beds"
+author: "George WIlloughby"
+date: "25/08/2021"
+output: html_document
+---
+
+# Load the data
+
+```{r}
+#hospital_beds_covid <- read.csv("acute-facet.csv")
+
+rm(hospital_beds_covid)
+
+install.packages("readxl")
+install.packages("janitor")
+```
+# Load the data
+
+```{r}
+library(janitor)
+library(tidyverse)
+library(readxl)
+
+hospital_beds_covid <- read_xlsx("acute-facet.xlsx") %>%
+  pivot_longer(cols = 2:23)
+
+hospital_beds_covid$name <- janitor :: convert_to_date(hospital_beds_covid$name)
+
+hospital_beds_covid
+```
+
+#Inspect the data 
+
+```{r}
+str(hospital_beds_covid)
+```
+
+# Changing columns names
+
+```{r}
+colnames(hospital_beds_covid) <- c("NHS_Trust", "Date", "Bed_occupancy")
+
+hospital_beds_covid
+```
+
+# Facet chart
+
+```{r}
+library(ggplot2)
+
+bed_occupancy_facet <- ggplot(hospital_beds_covid, aes(x=Date, y=Bed_occupancy, colour=NHS_Trust)) +
+  geom_line() +
+  xlab("Date") +
+  ylab("Daily Covid-19 bed occupants") +
+  facet_wrap(NHS_Trust ~ ., ncol=4) +
+  labs(title = "15 NHS trusts have more Coronavirus patients compared to the first peak") +
+  theme(legend.position = "none") +
+  theme(strip.text.x = element_text(size = 7))
+
+bed_occupancy_facet +
+  scale_color_manual(values = c("#fe2070", "#fe2070", "#0dbe98", "#fe2070", "#fe2070","#0dbe98", "#fe2070", "#94346e", "#fe2070", "#94346e", "#0dbe98", "#94346e", "#94346e", "#0dbe98", "#0dbe98"))
+
+ggsave("bed_occupancy_facet.png")
+
+```
+
+ggsave("mtcars.png")
+
+
+
+
+
+
+
